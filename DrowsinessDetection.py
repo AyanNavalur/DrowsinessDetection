@@ -23,6 +23,7 @@ score = 0
 thicc = 2
 rpred = [99]
 lpred = [99]
+yawn_pred = [0]
 
 while(True):
     ret, frame = cap.read()
@@ -35,12 +36,13 @@ while(True):
     left_eye = leye.detectMultiScale(gray)
     right_eye = reye.detectMultiScale(gray)
 
-    cv2.rectangle(frame, (0, height-50), (200, height),
+    cv2.rectangle(frame, (0, height-60), (250, height),
                   (0, 0, 0), thickness=cv2.FILLED)
 
     for (x, y, w, h) in faces:
         cv2.rectangle(frame, (x, y), (x+w, y+h), (100, 100, 100), 1)
 
+        # Yawn Predictor
         cut = frame[y:y+h, x:x+w]
         cut = cv2.cvtColor(cut, cv2.COLOR_BGR2GRAY)
         cut = cv2.resize(cut, (24, 24))
@@ -48,8 +50,7 @@ while(True):
         cut = cut.reshape(24, 24, -1)
         cut = np.expand_dims(cut, axis=0)
         yawn_pred = np.argmax(yawn_model.predict(cut), axis=-1)
-        print('Prediction: ',
-              yawn_labels[yawn_pred[0]], '-' if count % 3 == 0 else '')
+        # print('Prediction: ', yawn_labels[yawn_pred[0]])
         break
 
     for (x, y, w, h) in right_eye:
@@ -86,23 +87,33 @@ while(True):
             lbl = 'Closed'
         break
 
+    # For eyes
     if(rpred[0] == 0 and lpred[0] == 0):
         score = score+1
-        cv2.putText(frame, "Closed", (10, height-20), font,
+        cv2.putText(frame, "Eyes Closed", (10, height-20), font,
                     1, (255, 255, 255), 1, cv2.LINE_AA)
     # if(rpred[0]==1 or lpred[0]==1):
     else:
         score = score-1
-        cv2.putText(frame, "Open", (10, height-20), font,
+        cv2.putText(frame, "Eyes Open", (10, height-20), font,
+                    1, (255, 255, 255), 1, cv2.LINE_AA)
+
+    # For yawn
+    if(yawn_pred[0] == 0):
+        cv2.putText(frame, "No Yawn", (10, height-40), font,
+                    1, (255, 255, 255), 1, cv2.LINE_AA)
+    else:
+        score = score+1
+        cv2.putText(frame, "Yawn", (10, height-40), font,
                     1, (255, 255, 255), 1, cv2.LINE_AA)
 
     if(score < 0):
         score = 0
-    cv2.putText(frame, 'Score:'+str(score), (100, height-20),
+    cv2.putText(frame, 'Score:'+str(score), (150, height-20),
                 font, 1, (255, 255, 255), 1, cv2.LINE_AA)
-    if(score > 15):
+    if(score > 20):
         # person is feeling sleepy so we beep the alarm
-        cv2.imwrite(os.path.join(path, 'image.jpg'), frame)
+        # cv2.imwrite(os.path.join(path, 'image.jpg'), frame)
         # try:
         #     sound.play()
 
